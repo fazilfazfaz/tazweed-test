@@ -1,0 +1,489 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1,minimal-ui" name="viewport">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic|Material+Icons">
+    <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/vue-material.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/vue-material/dist/theme/default.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css">
+</head>
+
+<body>
+    <div id="app">
+        <template>
+            <div class="page-container">
+                <md-app md-mode="fixed">
+                    <md-app-toolbar class="md-primary">
+                        <!-- <md-button class="md-icon-button" @click="menuVisible = !menuVisible">
+                            <md-icon>menu</md-icon>
+                        </md-button> -->
+                        <span class="md-title">Tazweed</span>
+                    </md-app-toolbar>
+
+                    <md-app-drawer :md-active.sync="menuVisible">
+                        <md-toolbar class="md-transparent" md-elevation="0">
+                            Navigation
+                        </md-toolbar>
+
+                        <md-list>
+                            <md-list-item>
+                                <md-icon>move_to_inbox</md-icon>
+                                <span class="md-list-item-text">Inbox</span>
+                            </md-list-item>
+
+                            <md-list-item>
+                                <md-icon>send</md-icon>
+                                <span class="md-list-item-text">Sent Mail</span>
+                            </md-list-item>
+
+                            <md-list-item>
+                                <md-icon>delete</md-icon>
+                                <span class="md-list-item-text">Trash</span>
+                            </md-list-item>
+
+                            <md-list-item>
+                                <md-icon>error</md-icon>
+                                <span class="md-list-item-text">Spam</span>
+                            </md-list-item>
+                        </md-list>
+                    </md-app-drawer>
+                    <md-app-content>
+                        <tazweed></tazweed>
+                        <md-snackbar :md-duration="snackBarDuration" :md-active.sync="showSnackbar" md-persistent>
+                            <span>{{ snackBarMessage }}</span>
+                        </md-snackbar>
+                    </md-app-content>
+                </md-app>
+            </div>
+        </template>
+    </div>
+
+    <!-- templates -->
+    <script id="tmpl-welcome" type="text/template">
+        <div>
+            <md-card>
+                <md-card-header>
+                    <div class="md-title">Welcome to Tazweed</div>
+                </md-card-header>
+
+                <md-card-content>
+                    Login or Signup as a seller to manage your meetings!
+                </md-card-content>
+
+                <md-card-actions>
+                    <md-button v-on:click="$parent.route('login')">Login</md-button>
+                    <md-button v-on:click="$parent.route('signup')">Sign Up</md-button>
+                </md-card-actions>
+            </md-card>
+        </div>
+    </script>
+    <script id="tmpl-login" type="text/template">
+        <div>
+            <md-card>
+                <md-card-header>
+                    <div class="md-title">Login</div>
+                </md-card-header>
+
+                <md-card-content>
+                    <md-field>
+                        <label>Username</label>
+                        <md-input v-model="username"></md-input>
+                        <span class="md-helper-text">Username here</span>
+                    </md-field>
+                    <md-field>
+                        <label>Password</label>
+                        <md-input v-model="password"></md-input>
+                        <span class="md-helper-text">Password here</span>
+                    </md-field>
+                </md-card-content>
+
+                <md-card-actions>
+                    <md-button v-on:click="login">Login</md-button>
+                </md-card-actions>
+            </md-card>
+        </div>
+    </script>
+    <script id="tmpl-signup" type="text/template">
+        <div>
+            <md-card>
+                <md-card-header>
+                    <div class="md-title">Sign Up</div>
+                </md-card-header>
+
+                <md-card-content>
+                    <md-field>
+                        <label>Username</label>
+                        <md-input v-model="username"></md-input>
+                        <span class="md-helper-text">Username here</span>
+                    </md-field>
+                    <md-field>
+                        <label>Password</label>
+                        <md-input v-model="password"></md-input>
+                        <span class="md-helper-text">Password here</span>
+                    </md-field>
+                </md-card-content>
+
+                <md-card-actions>
+                    <md-button v-on:click="login">Sign Up</md-button>
+                </md-card-actions>
+            </md-card>
+        </div>
+    </script>
+    <script id="tmpl-timeslots" type="text/template">
+        <div>
+            <md-card class="taz-long">
+                <md-card-header>
+                    <div class="md-title">Timeslots</div>
+                </md-card-header>
+
+                <md-card-content>
+                    <template v-for="(t, index) in timeslots">
+                        <div class="md-layout md-gutter">
+                            <div class="md-layout-item">
+                                <md-field>
+                                    <label>From</label>
+                                    <md-select v-model="t.from" md-dense>
+                                        <md-option v-for="h in 24" :value="getTime(h - 1)">{{ getTime(h - 1) }}</md-option>
+                                    </md-select>
+                                </md-field>
+                            </div>
+                            <div class="md-layout-item">
+                                <md-field>
+                                    <label>To</label>
+                                    <md-select v-model="t.to" md-dense>
+                                        <md-option v-for="h in 24" :value="getTime(h - 1)">{{ getTime(h - 1) }}</md-option>
+                                    </md-select>
+                                </md-field>
+                            </div>
+                            <div v-if="index == 0" class="md-layout-item">
+                                <md-button v-on:click="add">Add Slot</md-button>
+                            </div>
+                            <div v-else class="md-layout-item">
+                                <md-button v-on:click="remove(index)">Delete</md-button>
+                            </div>
+                        </div>
+                    </template>
+                </md-card-content>
+
+                <md-card-actions>
+                    <md-button v-on:click="save">Save</md-button>
+                    <md-button v-on:click="$parent.route('appointments')">Appointment Requests</md-button>
+                </md-card-actions>
+            </md-card>
+        </div>
+    </script>
+    <script id="tmpl-appointments" type="text/template">
+        <div>
+            <md-card class="taz-long">
+                <md-card-header>
+                    <div class="md-title">Appointments</div>
+                </md-card-header>
+
+                <md-card-content>
+                    <template v-for="(a, index) in appointments">
+                        <div class="md-layout md-gutter">
+                            <div class="md-layout-item">
+                                <label>From:</label>
+                                {{ a.requested_by_name }}
+                            </div>
+                            <div class="md-layout-item">
+                                <label>Timeslot:</label>
+                                {{ a.timeslot.from + ' to ' + a.timeslot.to }}
+                            </div>
+                            <div class="md-layout-item">
+                            </div>
+                            <div v-if="a.approval_status == 'PENDING'" class="md-layout-item">
+                                <md-button v-on:click="take_action(index, 'approve')">APPROVE</md-button>
+                                <md-button v-on:click="take_action(index, 'reject')">REJECT</md-button>
+                            </div>
+                            <div v-else class="md-layout-item">
+                                <label>{{ a.approval_status }}</label>
+                            </div>
+                        </div>
+                    </template>
+                </md-card-content>
+
+                <md-card-actions>
+                    <md-button v-on:click="$parent.route('timeslots')">Timeslots</md-button>
+                </md-card-actions>
+            </md-card>
+        </div>
+    </script>
+    <!-- templates -->
+
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/vue-material"></script>
+    <script>
+        Vue.use(VueMaterial.default)
+        const Welcome={ template: document.getElementById('tmpl-welcome').innerHTML }
+        const Login={
+            template: document.getElementById('tmpl-login').innerHTML,
+            data: function() {
+                return {
+                    username: 'admin',
+                    password: 'admin'
+                }
+            },
+            methods: {
+                login: function() {
+                    var self=this;
+                    this.$parent.makeRequest({
+                        path: 'users/login',
+                        method: 'POST',
+                        body: {
+                            username: this.username,
+                            password: this.password,
+                        },
+                        success: function(res) {
+                            self.$parent.setAuthToken(res.data.token);
+                        }
+                    });
+                }
+            }
+        }
+        const Signup={
+            template: document.getElementById('tmpl-signup').innerHTML,
+            data: function() {
+                return {
+                    username: 'admin',
+                    password: 'admin'
+                }
+            },
+            methods: {
+                login: function() {
+                    var self=this;
+                    this.$parent.makeRequest({
+                        path: 'users/register',
+                        method: 'POST',
+                        body: {
+                            username: this.username,
+                            password: this.password,
+                            usertype: 'SELLER'
+                        },
+                        success: function(res) {
+                            app.showToast('Registered successfully!');
+                            self.$parent.route('login');
+                        }
+                    });
+                }
+            }
+        }
+        const Timeslots={
+            template: document.getElementById('tmpl-timeslots').innerHTML,
+            data: function() {
+                return {
+                    timeslots: [],
+                    yourValue: ''
+                }
+            },
+            mounted: function() {
+                this.load();
+            },
+            methods: {
+                load: function() {
+                    var self=this;
+                    this.$parent.makeRequest({
+                        method: 'GET',
+                        path: 'timeslots',
+                        success: function(json) {
+                            self.timeslots.splice(0);
+                            if(json.data.length<1) {
+                                self.add();
+                            } else {
+                                self.timeslots.push.apply(self.timeslots,json.data);
+                            }
+                        }
+                    });
+                },
+                save: function() {
+                    var self=this;
+                    this.$parent.makeRequest({
+                        method: 'POST',
+                        path: 'timeslots',
+                        body: {
+                            slots: this.timeslots,
+                        },
+                        success: function(json) {
+                            if(json.saved==true) {
+                                app.showToast('TImeslots saved');
+                            }
+                        }
+                    });
+                },
+                getTime: function(num) {
+                    if(num < 10) {
+                        return '0' + num + ':00';
+                    }
+                    return num + ':00';
+                },
+                add: function() {
+                    this.timeslots.push({
+                        from: '00:00',
+                        to: '00:00',
+                    });
+                },
+                remove: function(index) {
+                    this.timeslots.splice(index, 1);
+                }
+            }
+        }
+        const Appointments={
+            template: document.getElementById('tmpl-appointments').innerHTML,
+            data: function() {
+                return {
+                    appointments: [],
+                }
+            },
+            mounted: function() {
+                this.load();
+            },
+            methods: {
+                load: function() {
+                    var self = this;
+                    this.$parent.makeRequest({
+                        method: 'GET',
+                        path: 'appointments/my_appointments',
+                        success: function(json) {
+                            self.appointments.splice(0);
+                            self.appointments.push.apply(self.appointments, json.data);
+                        }
+                    });
+                },
+                take_action: function(index, action) {
+                    var self = this;
+                    this.$parent.makeRequest({
+                        method: 'POST',
+                        path: 'appointments/' + action,
+                        body: {
+                            appointment_id: this.appointments[index]._id
+                        },
+                        success: function(json) {
+                            self.load();
+                        }
+                    });
+                },
+            }
+        }
+        const routes={
+            '': Welcome,
+            'login': Login,
+            'signup': Signup,
+            'timeslots': Timeslots,
+            'appointments': Appointments,
+        }
+        
+        Vue.component('tazweed',{
+            data: function() {
+                return {
+                    currentRoute: '',
+                    auth: {
+                        token: '',
+                        username: 'admin',
+                        usertype: 'admin'
+                    }
+                }
+            },
+            computed: {
+                ViewComponent() {
+                    return routes[this.currentRoute]
+                }
+            },
+            methods: {
+                route: function(view) {
+                    this.currentRoute=view
+                },
+                showError: function(e) {
+                    if(typeof (e)=='string') {
+                        return app.showToast(e);
+                    }
+                    if(typeof (e)=='object') {
+                        for(var key in e) {
+                            if(e.hasOwnProperty(key)) {
+                                return app.showToast(e[key]);
+                            }
+                        }
+                    }
+                },
+                setAuthToken: function(token) {
+                    this.auth.token=token;
+                    var self=this;
+                    this.makeRequest({
+                        path: 'users/auth',
+                        method: 'POST',
+                        success: function(res) {
+                            if(res.data.usertype == 'SELLER') {
+                                self.route('timeslots');
+                                self.auth.username=res.data.username;
+                                self.auth.usertype=res.data.usertype;
+                            } else {
+                                app.showToast('Not a Seller!');
+                            }
+                        }
+                    });
+                },
+                makeRequest: function(o) {
+                    var method=o.method||'GET';
+                    fetch(o.path,{
+                        method: method,
+                        headers: {
+                            Authorization: this.auth.token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: method=='GET'? null:JSON.stringify(o.body||{})
+                    })
+                        .then((data) => data.json())
+                        .then((json) => {
+                            if(json.code==200) {
+                                o.success&&o.success(json);
+                            } else {
+                                this.showError(json.errors);
+                                o.always&&o.always();
+                            }
+                        })
+                        .catch((err) => {
+                            o.always&&o.always();
+                        })
+                }
+            },
+            render(h) { return h(this.ViewComponent) }
+        });
+
+        var app=new Vue({
+            el: '#app',
+            data: {
+                showSnackbar: false,
+                snackBarMessage: 'faz',
+                snackBarDuration: 4000,
+                menuVisible: false
+            },
+            methods: {
+                showToast: function(message) {
+                    this.snackBarMessage=message;
+                    this.showSnackbar=true;
+                }
+            }
+        })
+    </script>
+    <style>
+        .md-app {
+            height: 100vh;
+        }
+
+        .md-primary {
+        }
+
+        .md-card {
+            width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+            .md-card.taz-long {
+                width: 60%
+            }
+    </style>
+</body>
+</html>

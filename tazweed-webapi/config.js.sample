@@ -1,0 +1,7 @@
+module.exports = {
+    mongodb_host: 'localhost',
+    mongodb_database: 'tazweed',
+    jwt_secret: 'fasda',
+    bcrypt_salt: 10,
+    app_port: 8082
+}
