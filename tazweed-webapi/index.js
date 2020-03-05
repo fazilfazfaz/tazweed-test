@@ -46,14 +46,6 @@ const middlewares = require('./middlewares')(config);
 const repositories = require('./repositories')(models, config);
 const controllers = require('./controllers')(models, repositories, config);
 
-
-app.use('/app', express.static(path.join(__dirname, 'assets/tazweedweb/dist'), {
-	'dotfiles':'deny',
-}));
-app.use('/static', express.static(path.join(__dirname, 'assets/tazweedweb/dist/static'), {
-	'dotfiles':'deny',
-}));
-
 app.use(express.urlencoded());
 app.use(express.json());
 
